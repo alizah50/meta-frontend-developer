@@ -1,0 +1,19 @@
+.booking-page {
+    padding: 2rem;
+    text-align: center;
+  }
+  
+  .booking-header {
+    margin-bottom: 2rem;
+  }
+  
+  .booking-header h1 {
+    color: #00473e;
+    font-size: 2.5rem;
+  }
+  
+  .booking-header p {
+    color: #6b7280;
+    font-size: 1.25rem;
+  }
+  

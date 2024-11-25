@@ -1,64 +1,122 @@
-import React, { useState } from 'react'
+// import React from "react";
+import { Formik, Form, Field, ErrorMessage } from "formik";
+import * as Yup from "yup";
+import Lottie from "lottie-react";
+import calendarAnimation from "../animations/calendar.json";
+import { useNavigate } from "react-router-dom";
+import "./BookingForm.css";
 
-const BookingForm = (props) => {
+const BookingForm = ({ availableTimes, dispatch }) => {
+  const navigate = useNavigate();
 
-  const [date, setDate] = useState("");
-  const [times, setTimes] = useState("");
-  const [guests, setGuests] = useState("");
-  const [occasion, setOccasion] = useState("");
-
-  const handleSubmit = (e) => {
-    e.preventDefault();
-    props.submitForm(e);
-  }
-
-  const handleDateChange = (e) => {
-    setDate(e);
-    props.dispatch(e)
-  }
-
-  const availableTimes = ["17:00", "18:00", "19:00", "20:00", "21:00", "22:00"]
+  // Validation schema using Yup
+  const validationSchema = Yup.object({
+    date: Yup.string().required("Date is required."),
+    time: Yup.string().required("Time is required."),
+    guests: Yup.number()
+      .min(1, "Guests must be at least 1.")
+      .max(20, "Guests cannot exceed 20.")
+      .required("Number of guests is required."),
+    occasion: Yup.string().required("Occasion is required."),
+  });
 
   return (
-    <section className='booking-form'>
-      <form onSubmit={handleSubmit}>
-        <fieldset>
-          {/* Book Date */}
-          <div>
-            <label htmlFor="book-date">Choose Date:</label>
-            <input id='book-date' type="date" value={date} onChange={e => handleDateChange(e.target.value)} required/>
-          </div>
-          {/* Book Time */}
-          <div>
-            <label htmlFor="book-time">Choose Time:</label>
-            <select name="" id="book-time" value={times} onChange={e => setTimes(e.target.value)} required>
-              <option>Select a Time</option>
-              {
-                availableTimes.map(availableTimes => {return <option key={availableTimes}>{availableTimes}</option>})
-              }
-            </select>
-          </div>
-          {/* Number of Guests */}
-          <div>
-            <label htmlFor="book-guests">Number of Guests:</label>
-            <input type="number" id='book-guests' min={1} placeholder="1" onChange={e => setGuests(e.target.value)} required/>
-          </div>
-          {/* Occasion */}
-          <div>
-            <label htmlFor="book-occasion">Occasion:</label>
-            <select name="" id="book-occasion" onChange={e => setOccasion(e.target.value)} required>
-              <option value="">Birthday</option>
-              <option value="">Anniversary</option>
-            </select>
-          </div>
-          {/* Reservation Button */}
-          <div className='reservation-button' onClick = {handleSubmit}>
-            <button>Make Your Reservation</button>
-          </div>
-        </fieldset>
-      </form>
-    </section>
-  )
-}
+    <Formik
+      initialValues={{
+        date: "",
+        time: "",
+        guests: 1,
+        occasion: "Birthday",
+      }}
+      validationSchema={validationSchema}
+      onSubmit={(values, { setSubmitting }) => {
+        const reservationSuccess = submitAPI(values); // Simulated API call
+        if (reservationSuccess) {
+          navigate("/confirmed", { state: { reservationDetails: values } });
+        } else {
+          alert("Something went wrong. Please try again.");
+        }
+        setSubmitting(false);
+      }}
+    >
+      {({ isSubmitting, isValid, setFieldValue }) => (
+        <Form className="booking-form">
+          <h2>Book a Table</h2>
+          <Lottie
+            animationData={calendarAnimation}
+            loop={true}
+            className="lottie-calendar"
+          />
 
-export default BookingForm
+          {/* Date Picker */}
+          <div className="form-group">
+            <label htmlFor="date">Choose Date</label>
+            <Field
+              type="date"
+              id="date"
+              name="date"
+              min={new Date().toISOString().split("T")[0]} // Prevent past dates
+              onChange={(e) => {
+                setFieldValue("date", e.target.value);
+                dispatch({ type: "UPDATE_TIMES", payload: e.target.value }); // Update available times
+              }}
+            />
+            <ErrorMessage name="date" component="small" className="error-message" />
+          </div>
+
+          {/* Time Picker */}
+          <div className="form-group">
+            <label htmlFor="time">Choose Time</label>
+            <Field as="select" id="time" name="time">
+              <option value="" disabled>
+                Select Time
+              </option>
+              {availableTimes.map((time) => (
+                <option key={time} value={time}>
+                  {time}
+                </option>
+              ))}
+            </Field>
+            <ErrorMessage name="time" component="small" className="error-message" />
+          </div>
+
+          {/* Number of Guests */}
+          <div className="form-group">
+            <label htmlFor="guests">Number of Guests</label>
+            <Field
+              type="number"
+              id="guests"
+              name="guests"
+              min="1"
+              max="20"
+              placeholder="1-20"
+            />
+            <ErrorMessage name="guests" component="small" className="error-message" />
+          </div>
+
+          {/* Occasion Picker */}
+          <div className="form-group">
+            <label htmlFor="occasion">Occasion</label>
+            <Field as="select" id="occasion" name="occasion">
+              <option value="Birthday">Birthday</option>
+              <option value="Anniversary">Anniversary</option>
+              <option value="Other">Other</option>
+            </Field>
+            <ErrorMessage name="occasion" component="small" className="error-message" />
+          </div>
+
+          {/* Submit Button */}
+          <button
+            type="submit"
+            className={`submit-button ${isSubmitting || !isValid ? "disabled" : ""}`}
+            disabled={isSubmitting || !isValid}
+          >
+            Submit Reservation
+          </button>
+        </Form>
+      )}
+    </Formik>
+  );
+};
+
+export default BookingForm;
